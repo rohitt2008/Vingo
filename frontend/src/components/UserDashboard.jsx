@@ -3,7 +3,10 @@ import Nav from './Nav'
 
 function UserDashboard() {
   return (
-    <Nav/>
+    <div>
+      <Nav/>
+    </div>
+    
   )
 }
 
