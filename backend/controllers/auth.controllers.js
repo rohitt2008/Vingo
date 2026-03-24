@@ -131,13 +131,29 @@ export const resetPassword = async (req , res) =>{
 export const googleAuth = async (req , res) =>{
   try {
     const {fullName , email , mobile, role} = req.body;
-    let user = User.findOne({email});
-    if(!user){
-      user.create({
-        fullName,email,mobile,role
-      })
+    if(!email){
+      return res.status(400).json({message: "Email is required"});
     }
-    const token = await genToken(user._id)
+
+    let user = await User.findOne({email});
+
+    if(!user){
+      // For first-time Google auth, required profile fields must be provided.
+      if(!fullName || !mobile || !role){
+        return res.status(400).json({
+          message: "Please complete Google sign up with full name, mobile and role",
+        });
+      }
+
+      user = await User.create({
+        fullName,
+        email,
+        mobile,
+        role
+      });
+    }
+
+    const token = genToken(user._id);
     res.cookie("token" , token ,{
       secure: false, sameSite: "strict", maxAge: 7*24*60*60*1000, httpOnly: true
     })
