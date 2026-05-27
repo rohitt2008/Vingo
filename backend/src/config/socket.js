@@ -28,7 +28,16 @@ function getDistanceInMeters(coords1, coords2) {
 export const initSocket = (server) => {
   io = new Server(server, {
     cors: {
-      origin: env.CLIENT_URL,
+      origin: (origin, callback) => {
+        if (!origin) return callback(null, true);
+        const isVercel = origin.endsWith('.vercel.app');
+        const isLocal = origin.startsWith('http://localhost:') || origin.startsWith('http://127.0.0.1:');
+        if (isVercel || isLocal || origin === env.CLIENT_URL) {
+          callback(null, true);
+        } else {
+          callback(null, true);
+        }
+      },
       credentials: true,
       methods: ['GET', 'POST'],
     },
