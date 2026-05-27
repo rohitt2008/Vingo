@@ -42,6 +42,13 @@ function DeliveryBoy() {
   const [otpCode, setOtpCode] = useState("");
   const [otpError, setOtpError] = useState("");
   const [verifyingOtp, setVerifyingOtp] = useState(false);
+  
+  // Handover Pickup OTP States
+  const [showPickupOtpModal, setShowPickupOtpModal] = useState(false);
+  const [pickupOtpCode, setPickupOtpCode] = useState("");
+  const [pickupOtpError, setPickupOtpError] = useState("");
+  const [pickupOrderId, setPickupOrderId] = useState(null);
+  const [verifyingPickupOtp, setVerifyingPickupOtp] = useState(false);
 
   const mapContainerRef = useRef(null);
   const mapRef = useRef(null);
@@ -241,20 +248,41 @@ function DeliveryBoy() {
     }
   };
 
-  const handlePickupOrder = async (orderId) => {
-    setUpdatingId(orderId);
+  const handlePickupOrder = (orderId) => {
+    setPickupOrderId(orderId);
+    setPickupOtpCode("");
+    setPickupOtpError("");
+    setShowPickupOtpModal(true);
+  };
+
+  const handlePickupOtpSubmit = async (e) => {
+    e.preventDefault();
+    if (!pickupOtpCode || pickupOtpCode.length < 6) {
+      setPickupOtpError("Please enter a valid 6-digit handover OTP.");
+      return;
+    }
+
+    setVerifyingPickupOtp(true);
+    setPickupOtpError("");
     try {
-      const res = await axios.patch(`${serverUrl}/api/orders/${orderId}/pickup`, {}, { withCredentials: true });
+      const res = await axios.patch(
+        `${serverUrl}/api/orders/${pickupOrderId}/pickup`,
+        { otp: pickupOtpCode },
+        { withCredentials: true }
+      );
       if (res.data?.success) {
-        showToast("Food picked up! Route GPS telemetry is now broadcasting.", "success");
+        showToast("Food picked up successfully! Route GPS telemetry is now broadcasting.", "success");
+        setShowPickupOtpModal(false);
+        setPickupOrderId(null);
+        setPickupOtpCode("");
         setSimStep(0);
         setDistanceLeft(2500);
         fetchOrders();
       }
     } catch (err) {
-      showToast("Failed to pick up order.", "error");
+      setPickupOtpError(err.response?.data?.message || "Incorrect Restaurant Handover OTP. Please ask the chef/owner.");
     } finally {
-      setUpdatingId(null);
+      setVerifyingPickupOtp(false);
     }
   };
 
@@ -320,7 +348,7 @@ function DeliveryBoy() {
         fetchOrders();
       }
     } catch (err) {
-      setOtpError(err.response?.data?.message || "Invalid OTP code. Master bypass is '123456'.");
+      setOtpError(err.response?.data?.message || "Invalid OTP code. Please try again.");
     } finally {
       setVerifyingOtp(false);
     }
@@ -654,10 +682,6 @@ function DeliveryBoy() {
                 </p>
               )}
 
-              <div className="bg-amber-50 rounded-xl p-2.5 text-[10px] text-amber-700 font-bold border border-amber-200">
-                💡 Master bypass/offline testing fallback code: <span className="underline font-mono">123456</span>
-              </div>
-
               <div className="flex gap-2.5 mt-2">
                 <button
                   type="button"
@@ -677,6 +701,65 @@ function DeliveryBoy() {
                   disabled={verifyingOtp}
                 >
                   {verifyingOtp ? "Verifying..." : "Verify & Complete"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Handover Pickup OTP Verification ModalDialogue */}
+      {showPickupOtpModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-[#ffe4dc] flex flex-col gap-4 animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex flex-col items-center text-center">
+              <div className="p-4 bg-orange-50 text-[#ff4d2d] rounded-full mb-3">
+                <FiLock size={32} />
+              </div>
+              <h3 className="text-lg font-black text-gray-800">Restaurant Handover OTP</h3>
+              <p className="text-xs text-gray-500 max-w-xs mt-1.5">
+                Please request the restaurant owner/chef to verbally provide the 6-digit Pickup Handover code shown on their dashboard screen.
+              </p>
+            </div>
+
+            <form onSubmit={handlePickupOtpSubmit} className="flex flex-col gap-3">
+              <input
+                type="text"
+                maxLength={6}
+                value={pickupOtpCode}
+                onChange={(e) => setPickupOtpCode(e.target.value.replace(/\D/g, ""))}
+                placeholder="Enter Handover OTP"
+                className="w-full text-center tracking-[0.75em] text-2xl font-black placeholder:tracking-normal placeholder:text-sm placeholder:font-bold py-3.5 border border-[#ffe4dc] rounded-2xl bg-[#fffcfb] focus:outline-none focus:border-[#ff4d2d] focus:ring-1 focus:ring-[#ff4d2d] transition-all"
+                disabled={verifyingPickupOtp}
+                autoFocus
+              />
+
+              {pickupOtpError && (
+                <p className="text-xs text-red-500 text-center font-bold flex items-center justify-center gap-1">
+                  <FiAlertCircle /> {pickupOtpError}
+                </p>
+              )}
+
+              <div className="flex gap-2.5 mt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowPickupOtpModal(false);
+                    setPickupOtpCode("");
+                    setPickupOtpError("");
+                    setPickupOrderId(null);
+                  }}
+                  className="flex-1 py-3 text-xs font-bold bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl transition-all cursor-pointer"
+                  disabled={verifyingPickupOtp}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 py-3 text-xs font-bold bg-green-500 hover:bg-green-600 text-white rounded-xl transition-all shadow-md shadow-green-100 cursor-pointer flex items-center justify-center gap-1.5"
+                  disabled={verifyingPickupOtp}
+                >
+                  {verifyingPickupOtp ? "Verifying..." : "Verify & Pickup"}
                 </button>
               </div>
             </form>

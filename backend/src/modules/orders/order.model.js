@@ -106,6 +106,8 @@ const orderSchema = new mongoose.Schema({
   otpExpires: Date,
   pickupOtpHash: String,
   pickupOtpExpires: Date,
+  pickupOtpCode: String,
+  deliveryOtpCode: String,
   
   // Feedback
   rating: { type: Number, min: 1, max: 5 },

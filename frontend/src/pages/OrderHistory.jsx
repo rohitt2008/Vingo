@@ -25,11 +25,15 @@ function OrderHistory() {
   const [rating, setRating] = useState(5);
   const [reviewText, setReviewText] = useState("");
   const [submittingRating, setSubmittingRating] = useState(false);
+  const [showPrepModal, setShowPrepModal] = useState(false);
+  const [prepOrderId, setPrepOrderId] = useState(null);
+  const [prepTimeInput, setPrepTimeInput] = useState("30");
 
   // Live driver tracking coords state
   const [liveDriverCoords, setLiveDriverCoords] = useState(null);
   const [simStep, setSimStep] = useState(0);
   const [liveOtp, setLiveOtp] = useState("");
+  const [livePickupOtp, setLivePickupOtp] = useState("");
   const [liveEta, setLiveEta] = useState(null);
   const [liveDistance, setLiveDistance] = useState(null);
 
@@ -204,6 +208,9 @@ function OrderHistory() {
       if (data.details?.otp) {
         setLiveOtp(data.details.otp);
       }
+      if (data.details?.pickupOtp) {
+        setLivePickupOtp(data.details.pickupOtp);
+      }
       fetchOrderHistory(); // Refresh general list too
     }
   }, [selectedOrder]);
@@ -262,11 +269,10 @@ function OrderHistory() {
       let payload = { status: newStatus };
 
       if (newStatus === "accepted") {
-        const prepTimeStr = prompt("Enter estimated preparation time (minutes):", "30");
-        if (prepTimeStr === null) return;
-        const estimatedPrepTime = parseInt(prepTimeStr, 10) || 30;
-        endpoint = `${serverUrl}/api/orders/${selectedOrder._id}/accept`;
-        payload = { estimatedPrepTime };
+        setPrepOrderId(selectedOrder._id);
+        setPrepTimeInput("30");
+        setShowPrepModal(true);
+        return;
       } else if (newStatus === "ready") {
         endpoint = `${serverUrl}/api/orders/${selectedOrder._id}/ready`;
         payload = {};
@@ -284,6 +290,30 @@ function OrderHistory() {
       }
     } catch (err) {
       showToast(err.response?.data?.message || "Failed to update order status.", "error");
+    }
+  };
+
+  const handleSubmitPrepTime = async () => {
+    if (!prepOrderId) return;
+    try {
+      const estimatedPrepTime = parseInt(prepTimeInput, 10) || 30;
+      const endpoint = `${serverUrl}/api/orders/${prepOrderId}/accept`;
+      const payload = { estimatedPrepTime };
+
+      const res = await axios.patch(
+        endpoint,
+        payload,
+        { withCredentials: true }
+      );
+      if (res.data?.success) {
+        showToast("Order accepted successfully with estimated prep time!", "success");
+        setShowPrepModal(false);
+        setPrepOrderId(null);
+        setSelectedOrder(res.data?.data?.order);
+        fetchOrderHistory();
+      }
+    } catch (err) {
+      showToast(err.response?.data?.message || "Failed to accept order.", "error");
     }
   };
 
@@ -504,12 +534,25 @@ function OrderHistory() {
                   </div>
                 )}
 
+                {/* Store Owner Handover OTP Card */}
+                {selectedOrder.status === "ready" && userData?.role === "owner" && (
+                  <div className="bg-amber-50 border border-amber-200 rounded-3xl p-5 text-center flex flex-col gap-2.5 items-center shadow-sm">
+                    <div className="text-amber-800 text-xs font-black uppercase tracking-wider">📦 Restaurant Handover OTP</div>
+                    <div className="text-4xl font-mono font-black text-amber-600 tracking-[0.15em] pl-[0.15em] bg-white border border-amber-200 px-6 py-2.5 rounded-2xl shadow-inner mt-1">
+                      {selectedOrder.pickupOtpCode || livePickupOtp || "⏱️ Generating..."}
+                    </div>
+                    <p className="text-[10px] text-amber-700 max-w-xs leading-relaxed font-semibold">
+                      Provide this 6-digit code to the delivery rider when they arrive to pick up the food packages!
+                    </p>
+                  </div>
+                )}
+
                 {/* Secure Handover OTP Card */}
                 {selectedOrder.status === "out_for_delivery" && (
                   <div className="bg-orange-50 border border-orange-200 rounded-3xl p-5 text-center flex flex-col gap-2.5 items-center shadow-sm">
                     <div className="text-[#ff4d2d] text-xs font-black uppercase tracking-wider">🔑 Handover Verification OTP</div>
                     <div className="text-4xl font-mono font-black text-[#ff4d2d] tracking-[0.15em] pl-[0.15em] bg-white border border-[#ffe4dc] px-6 py-2.5 rounded-2xl shadow-inner mt-1">
-                      {liveOtp || "123456"}
+                      {selectedOrder.deliveryOtpCode || liveOtp || "⏱️ Pending..."}
                     </div>
                     <p className="text-[10px] text-gray-500 max-w-xs leading-relaxed">
                       Your rider must enter this dynamic 6-digit code on their device. Share this verbally upon arrival at your doorstep!
@@ -691,6 +734,70 @@ function OrderHistory() {
                 {submittingRating ? "Submitting..." : "Submit Feedback"}
               </button>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── Cooking Time Modal ─────────────────────────────────────────── */}
+      {showPrepModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl border border-[#ffe4dc] flex flex-col gap-4 animate-in fade-in zoom-in-95 duration-150">
+            <div>
+              <h3 className="text-lg font-extrabold text-gray-800 flex items-center gap-2">
+                ⏱️ Estimated Prep Time
+              </h3>
+              <p className="text-xs text-gray-500 mt-1">
+                Please set the preparation time (in minutes) for cooking and packing this order.
+              </p>
+            </div>
+
+            <div className="flex gap-2 flex-wrap">
+              {[15, 20, 30, 45, 60].map((mins) => (
+                <button
+                  key={mins}
+                  type="button"
+                  onClick={() => setPrepTimeInput(mins.toString())}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer border ${
+                    prepTimeInput === mins.toString()
+                      ? "bg-[#ff4d2d] text-white border-[#ff4d2d]"
+                      : "bg-[#fff9f6] text-gray-700 border-[#ffe4dc] hover:bg-orange-50"
+                  }`}
+                >
+                  {mins} mins
+                </button>
+              ))}
+            </div>
+
+            <input
+              type="number"
+              min="1"
+              max="180"
+              required
+              placeholder="Enter preparation time in minutes"
+              value={prepTimeInput}
+              onChange={(e) => setPrepTimeInput(e.target.value)}
+              className="w-full border border-[#ffe4dc] rounded-xl px-4 py-2.5 outline-none focus:border-[#ff4d2d] transition-all bg-[#fff9f6] text-sm font-semibold"
+            />
+
+            <div className="flex gap-2 justify-end mt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowPrepModal(false);
+                  setPrepOrderId(null);
+                }}
+                className="px-4 py-2 rounded-xl text-gray-500 text-xs font-semibold hover:bg-gray-100 transition-all cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleSubmitPrepTime}
+                className="px-5 py-2 rounded-xl bg-[#ff4d2d] text-white text-xs font-bold hover:bg-[#e64323] transition-all cursor-pointer animate-pulse"
+              >
+                Accept Order & Prep 🍳
+              </button>
+            </div>
           </div>
         </div>
       )}

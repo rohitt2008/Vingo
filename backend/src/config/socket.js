@@ -120,10 +120,9 @@ export const initSocket = (server) => {
 
         // OTP Gating: generates or pulls OTP when within 50 meters of customer
         if (distanceMeters < 50) {
-          let plainOtp = '123456';
           if (!order.otpHash) {
             // Generate OTP dynamically if not already set
-            plainOtp = Math.floor(100000 + Math.random() * 900000).toString();
+            const plainOtp = Math.floor(100000 + Math.random() * 900000).toString();
             order.otpHash = await bcrypt.hash(plainOtp, 10);
             order.otpExpires = new Date(Date.now() + 60 * 60 * 1000);
             await order.save();

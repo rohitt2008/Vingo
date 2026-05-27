@@ -505,6 +505,11 @@ export const markOrderReady = async (orderId, ownerId) => {
     throw new AppError('Access denied: You do not own this restaurant', 403);
   }
 
+  const plainPickupOtp = Math.floor(100000 + Math.random() * 900000).toString();
+  order.pickupOtpHash = await bcrypt.hash(plainPickupOtp, 10);
+  order.pickupOtpExpires = new Date(Date.now() + 60 * 60 * 1000);
+  order.pickupOtpCode = plainPickupOtp;
+
   order.status = 'ready';
   order.statusTimeline.push({
     status: 'ready',
@@ -514,7 +519,10 @@ export const markOrderReady = async (orderId, ownerId) => {
   await order.save();
 
   // Trigger Real-time event broadcast
-  emitOrderStatusUpdate(order._id, 'ready', { note: 'Food is prepared and ready for pickup!' });
+  emitOrderStatusUpdate(order._id, 'ready', { 
+    note: 'Food is prepared and ready for pickup!',
+    pickupOtp: plainPickupOtp
+  });
 
   // Proximity Driver Allocation (Fulfillment Engine)
   try {
@@ -583,14 +591,26 @@ export const markOrderReady = async (orderId, ownerId) => {
 };
 
 // ── Pickup Order (Sets status to out_for_delivery and generates Secure OTP)
-export const pickupOrder = async (orderId, deliveryBoyId) => {
+export const pickupOrder = async (orderId, deliveryBoyId, pickupOtp) => {
   const order = await Order.findById(orderId).populate('restaurantId');
   if (!order) {
     throw new AppError('Order not found', 404);
   }
 
+  if (!order.pickupOtpHash) {
+    throw new AppError('Handover OTP has not been generated for this order yet.', 400);
+  }
+
+  const isPickupMatch = await bcrypt.compare(pickupOtp, order.pickupOtpHash);
+  if (!isPickupMatch) {
+    throw new AppError('Incorrect Restaurant Handover OTP. Please ask the restaurant owner for the correct code.', 400);
+  }
+
   order.status = 'out_for_delivery';
   order.deliveryBoyId = deliveryBoyId;
+  order.pickupOtpHash = undefined;
+  order.pickupOtpExpires = undefined;
+  order.pickupOtpCode = undefined;
   order.statusTimeline.push({
     status: 'out_for_delivery',
     note: 'Delivery partner picked up the order and is en route!',
@@ -600,6 +620,7 @@ export const pickupOrder = async (orderId, deliveryBoyId) => {
   const plainOtp = Math.floor(100000 + Math.random() * 900000).toString();
   order.otpHash = await bcrypt.hash(plainOtp, 10);
   order.otpExpires = new Date(Date.now() + 60 * 60 * 1000);
+  order.deliveryOtpCode = plainOtp;
 
   await order.save();
 
@@ -643,7 +664,7 @@ export const verifyOtp = async (orderId, otpCode) => {
     throw new AppError('Order status must be out for delivery to verify OTP', 400);
   }
 
-  const isMatch = (otpCode === '123456') || (order.otpHash && await bcrypt.compare(otpCode, order.otpHash));
+  const isMatch = order.otpHash && await bcrypt.compare(otpCode, order.otpHash);
   if (!isMatch) {
     throw new AppError('Incorrect OTP. Please try again.', 400);
   }
@@ -651,6 +672,7 @@ export const verifyOtp = async (orderId, otpCode) => {
   order.status = 'delivered';
   order.otpHash = undefined;
   order.otpExpires = undefined;
+  order.deliveryOtpCode = undefined;
   order.statusTimeline.push({
     status: 'delivered',
     note: 'OTP verified successfully. Order delivered hot and fresh!',

@@ -53,8 +53,12 @@ export const markOrderReady = asyncWrapper(async (req, res) => {
 });
 
 export const pickupOrder = asyncWrapper(async (req, res) => {
-  const order = await orderService.pickupOrder(req.params.id, req.userId);
-  res.status(200).json({ success: true, message: 'Order picked up', data: { order } });
+  const { otp } = req.body;
+  if (!otp) {
+    return res.status(400).json({ success: false, message: 'Pickup Handover OTP is required' });
+  }
+  const order = await orderService.pickupOrder(req.params.id, req.userId, otp);
+  res.status(200).json({ success: true, message: 'Order picked up successfully', data: { order } });
 });
 
 export const verifyOtp = asyncWrapper(async (req, res) => {
