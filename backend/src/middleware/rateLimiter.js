@@ -1,11 +1,12 @@
 import rateLimit from 'express-rate-limit';
+import env from '../config/env.js';
 
 /**
- * General API rate limiter — 100 requests per 15 minutes per IP.
+ * General API rate limiter — 100 requests per 15 minutes per IP (100,000 in dev).
  */
 export const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 100,
+  max: env.NODE_ENV === 'development' ? 100000 : 100,
   standardHeaders: true,
   legacyHeaders: false,
   message: {
@@ -15,12 +16,12 @@ export const apiLimiter = rateLimit({
 });
 
 /**
- * Strict rate limiter for auth endpoints — 10 requests per 15 minutes per IP.
+ * Strict rate limiter for auth endpoints — 10 requests per 15 minutes per IP (100,000 in dev).
  * Prevents brute-force login/signup attempts.
  */
 export const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 10,
+  max: env.NODE_ENV === 'development' ? 100000 : 10,
   standardHeaders: true,
   legacyHeaders: false,
   message: {
@@ -30,11 +31,11 @@ export const authLimiter = rateLimit({
 });
 
 /**
- * OTP rate limiter — 3 requests per 5 minutes.
+ * OTP rate limiter — 3 requests per 5 minutes (100,000 in dev).
  */
 export const otpLimiter = rateLimit({
   windowMs: 5 * 60 * 1000,
-  max: 3,
+  max: env.NODE_ENV === 'development' ? 100000 : 3,
   standardHeaders: true,
   legacyHeaders: false,
   message: {
