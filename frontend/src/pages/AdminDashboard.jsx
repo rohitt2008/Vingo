@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { serverUrl } from "../App";
 import Nav from "../components/Nav";
-import { FiTrendingUp, FiUsers, FiShoppingBag, FiPercent, FiShield, FiCheck, FiX, FiTrash, FiGrid, FiPlus } from "react-icons/fi";
+import { FiTrendingUp, FiUsers, FiShoppingBag, FiPercent, FiShield, FiCheck, FiX, FiTrash, FiGrid, FiPlus, FiAlertCircle } from "react-icons/fi";
 import { useToast } from "../context/ToastContext";
 
 function AdminDashboard() {
@@ -13,6 +13,12 @@ function AdminDashboard() {
   const [restaurants, setRestaurants] = useState([]);
   const [coupons, setCoupons] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [confirmModal, setConfirmModal] = useState({
+    show: false,
+    title: "",
+    message: "",
+    onConfirm: null
+  });
 
   // New Coupon Form States
   const [showAddCoupon, setShowAddCoupon] = useState(false);
@@ -85,15 +91,21 @@ function AdminDashboard() {
     }
   };
 
-  const handleDeleteCoupon = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this coupon?")) return;
-    try {
-      await axios.delete(`${serverUrl}/api/coupons/${id}`, { withCredentials: true });
-      showToast("Coupon campaign deleted.", "success");
-      fetchAdminData();
-    } catch {
-      showToast("Failed to delete coupon.", "error");
-    }
+  const handleDeleteCoupon = (id) => {
+    setConfirmModal({
+      show: true,
+      title: "Delete Coupon?",
+      message: "Are you sure you want to delete this coupon campaign permanently?",
+      onConfirm: async () => {
+        try {
+          await axios.delete(`${serverUrl}/api/coupons/${id}`, { withCredentials: true });
+          showToast("Coupon campaign deleted.", "success");
+          fetchAdminData();
+        } catch {
+          showToast("Failed to delete coupon.", "error");
+        }
+      }
+    });
   };
 
   // ── User updates ─────────────────────────────────────────────────────
@@ -115,15 +127,21 @@ function AdminDashboard() {
     }
   };
 
-  const handleDeleteUser = async (userId) => {
-    if (!window.confirm("Delete this user permanently?")) return;
-    try {
-      await axios.delete(`${serverUrl}/api/admin/users/${userId}`, { withCredentials: true });
-      showToast("User removed.", "success");
-      fetchAdminData();
-    } catch {
-      showToast("Failed to delete user.", "error");
-    }
+  const handleDeleteUser = (userId) => {
+    setConfirmModal({
+      show: true,
+      title: "Delete User?",
+      message: "Are you sure you want to permanently delete this user account?",
+      onConfirm: async () => {
+        try {
+          await axios.delete(`${serverUrl}/api/admin/users/${userId}`, { withCredentials: true });
+          showToast("User removed.", "success");
+          fetchAdminData();
+        } catch {
+          showToast("Failed to delete user.", "error");
+        }
+      }
+    });
   };
 
   // ── Restaurant Approvals ─────────────────────────────────────────────
@@ -450,6 +468,43 @@ function AdminDashboard() {
                 Launch Campaign
               </button>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Reusable Premium Glassmorphic Confirmation Modal */}
+      {confirmModal.show && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-[#ffe4dc] flex flex-col gap-4 animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex flex-col items-center text-center">
+              <div className="p-4 bg-amber-50 text-amber-500 rounded-full mb-3">
+                <FiAlertCircle size={32} />
+              </div>
+              <h3 className="text-lg font-black text-gray-800">{confirmModal.title}</h3>
+              <p className="text-xs text-gray-500 max-w-xs mt-1.5 leading-relaxed">
+                {confirmModal.message}
+              </p>
+            </div>
+
+            <div className="flex gap-2.5 mt-2">
+              <button
+                type="button"
+                onClick={() => setConfirmModal({ ...confirmModal, show: false })}
+                className="flex-1 py-3 text-xs font-bold bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl transition-all cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (confirmModal.onConfirm) confirmModal.onConfirm();
+                  setConfirmModal({ ...confirmModal, show: false });
+                }}
+                className="flex-1 py-3 text-xs font-bold bg-red-500 hover:bg-red-600 text-white rounded-xl transition-all shadow-md shadow-red-100 cursor-pointer"
+              >
+                Confirm
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -39,6 +39,12 @@ function OwnerDashboard() {
   const [showPrepModal, setShowPrepModal] = useState(false);
   const [prepOrderId, setPrepOrderId] = useState(null);
   const [prepTimeInput, setPrepTimeInput] = useState("30");
+  const [confirmModal, setConfirmModal] = useState({
+    show: false,
+    title: "",
+    message: "",
+    onConfirm: null
+  });
   
   // Registration Form State
   const [regName, setRegName] = useState("");
@@ -321,18 +327,24 @@ function OwnerDashboard() {
     }
   };
 
-  const handleDeleteCategory = async (catId) => {
-    if (!window.confirm("Are you sure you want to delete this category and all its items?")) return;
-    try {
-      const res = await axios.delete(
-        `${serverUrl}/api/menus/${restaurant._id}/categories/${catId}`,
-        { withCredentials: true }
-      );
-      setMenu(res.data?.data?.menu);
-      showToast("Category deleted successfully!", "success");
-    } catch (err) {
-      showToast("Failed to delete category.", "error");
-    }
+  const handleDeleteCategory = (catId) => {
+    setConfirmModal({
+      show: true,
+      title: "Delete Category?",
+      message: "Are you sure you want to delete this category and all its items permanently?",
+      onConfirm: async () => {
+        try {
+          const res = await axios.delete(
+            `${serverUrl}/api/menus/${restaurant._id}/categories/${catId}`,
+            { withCredentials: true }
+          );
+          setMenu(res.data?.data?.menu);
+          showToast("Category deleted successfully!", "success");
+        } catch (err) {
+          showToast("Failed to delete category.", "error");
+        }
+      }
+    });
   };
 
   // ── Item Management ──────────────────────────────────────────────────
@@ -411,18 +423,24 @@ function OwnerDashboard() {
     }
   };
 
-  const handleDeleteItem = async (catId, item_Id) => {
-    if (!window.confirm("Are you sure you want to delete this menu item?")) return;
-    try {
-      const res = await axios.delete(
-        `${serverUrl}/api/menus/${restaurant._id}/categories/${catId}/items/${item_Id}`,
-        { withCredentials: true }
-      );
-      setMenu(res.data?.data?.menu);
-      showToast("Menu item deleted successfully!", "success");
-    } catch (err) {
-      showToast("Failed to delete item.", "error");
-    }
+  const handleDeleteItem = (catId, item_Id) => {
+    setConfirmModal({
+      show: true,
+      title: "Delete Menu Item?",
+      message: "Are you sure you want to delete this menu item permanently?",
+      onConfirm: async () => {
+        try {
+          const res = await axios.delete(
+            `${serverUrl}/api/menus/${restaurant._id}/categories/${catId}/items/${item_Id}`,
+            { withCredentials: true }
+          );
+          setMenu(res.data?.data?.menu);
+          showToast("Menu item deleted successfully!", "success");
+        } catch (err) {
+          showToast("Failed to delete item.", "error");
+        }
+      }
+    });
   };
 
   const handleToggleItemAvailability = async (catId, item_Id) => {
@@ -1329,6 +1347,43 @@ function OwnerDashboard() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Reusable Premium Glassmorphic Confirmation Modal */}
+      {confirmModal.show && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-[#ffe4dc] flex flex-col gap-4 animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex flex-col items-center text-center">
+              <div className="p-4 bg-amber-50 text-amber-500 rounded-full mb-3">
+                <FiAlertCircle size={32} />
+              </div>
+              <h3 className="text-lg font-black text-gray-800">{confirmModal.title}</h3>
+              <p className="text-xs text-gray-500 max-w-xs mt-1.5 leading-relaxed">
+                {confirmModal.message}
+              </p>
+            </div>
+
+            <div className="flex gap-2.5 mt-2">
+              <button
+                type="button"
+                onClick={() => setConfirmModal({ ...confirmModal, show: false })}
+                className="flex-1 py-3 text-xs font-bold bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl transition-all cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (confirmModal.onConfirm) confirmModal.onConfirm();
+                  setConfirmModal({ ...confirmModal, show: false });
+                }}
+                className="flex-1 py-3 text-xs font-bold bg-red-500 hover:bg-red-600 text-white rounded-xl transition-all shadow-md shadow-red-100 cursor-pointer"
+              >
+                Confirm
+              </button>
+            </div>
           </div>
         </div>
       )}

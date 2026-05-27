@@ -28,6 +28,7 @@ function OrderHistory() {
   const [showPrepModal, setShowPrepModal] = useState(false);
   const [prepOrderId, setPrepOrderId] = useState(null);
   const [prepTimeInput, setPrepTimeInput] = useState("30");
+  const [showCancelModal, setShowCancelModal] = useState(false);
 
   // Live driver tracking coords state
   const [liveDriverCoords, setLiveDriverCoords] = useState(null);
@@ -317,22 +318,8 @@ function OrderHistory() {
     }
   };
 
-  const handleCancelOrder = async () => {
-    if (!window.confirm("Are you sure you want to cancel this order? Any wallet payment will be fully refunded instantly!")) return;
-    try {
-      const res = await axios.patch(
-        `${serverUrl}/api/orders/${selectedOrder._id}/status`,
-        { status: "cancelled" },
-        { withCredentials: true }
-      );
-      if (res.data?.success) {
-        showToast("Order cancelled successfully!", "success");
-        setSelectedOrder(res.data?.data?.order);
-        fetchOrderHistory();
-      }
-    } catch (err) {
-      showToast(err.response?.data?.message || "Failed to cancel order.", "error");
-    }
+  const handleCancelOrder = () => {
+    setShowCancelModal(true);
   };
 
   // Helper colors
@@ -796,6 +783,56 @@ function OrderHistory() {
                 className="px-5 py-2 rounded-xl bg-[#ff4d2d] text-white text-xs font-bold hover:bg-[#e64323] transition-all cursor-pointer animate-pulse"
               >
                 Accept Order & Prep 🍳
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Cancellation Confirmation Modal */}
+      {showCancelModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-[#ffe4dc] flex flex-col gap-4 animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex flex-col items-center text-center">
+              <div className="p-4 bg-red-50 text-red-500 rounded-full mb-3 animate-bounce">
+                <FiAlertCircle size={32} />
+              </div>
+              <h3 className="text-lg font-black text-gray-800">Cancel this Order?</h3>
+              <p className="text-xs text-gray-500 max-w-xs mt-1.5 leading-relaxed">
+                Are you sure you want to cancel this order? Any wallet payments will be **fully refunded instantly** to your balance!
+              </p>
+            </div>
+
+            <div className="flex gap-2.5 mt-2">
+              <button
+                type="button"
+                onClick={() => setShowCancelModal(false)}
+                className="flex-1 py-3 text-xs font-bold bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl transition-all cursor-pointer"
+              >
+                No, Keep Order
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  setShowCancelModal(false);
+                  try {
+                    const res = await axios.patch(
+                      `${serverUrl}/api/orders/${selectedOrder._id}/status`,
+                      { status: "cancelled" },
+                      { withCredentials: true }
+                    );
+                    if (res.data?.success) {
+                      showToast("Order cancelled successfully!", "success");
+                      setSelectedOrder(res.data?.data?.order);
+                      fetchOrderHistory();
+                    }
+                  } catch (err) {
+                    showToast(err.response?.data?.message || "Failed to cancel order.", "error");
+                  }
+                }}
+                className="flex-1 py-3 text-xs font-bold bg-red-500 hover:bg-red-600 text-white rounded-xl transition-all shadow-md shadow-red-100 cursor-pointer"
+              >
+                Yes, Cancel
               </button>
             </div>
           </div>
