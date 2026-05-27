@@ -14,7 +14,7 @@ import OrderHistory from './pages/OrderHistory'
 import Wallet from './pages/Wallet'
 import AdminDashboard from './pages/AdminDashboard'
 
-export const serverUrl = "http://localhost:3004"
+export const serverUrl = "https://vingo-kkgy.onrender.com"
 
 function App() {
   UseGetCurrentUser()
