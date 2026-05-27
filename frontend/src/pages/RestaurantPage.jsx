@@ -6,9 +6,12 @@ import Nav from "../components/Nav";
 import { FiStar, FiClock, FiPlus, FiMinus, FiMapPin, FiShoppingBag, FiInfo } from "react-icons/fi";
 import { BiDish } from "react-icons/bi";
 
+import { useToast } from "../context/ToastContext";
+
 function RestaurantPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { showToast } = useToast();
 
   const getImageUrl = (url) => {
     if (!url) return "";
@@ -103,12 +106,12 @@ function RestaurantPage() {
 
       const res = await axios.post(`${serverUrl}/api/cart/add`, payload, { withCredentials: true });
       if (res.data?.success) {
-        alert(`${selectedItem.name} added to cart successfully!`);
+        showToast(`${selectedItem.name} added to cart successfully!`, "success");
         setCartCount(prev => prev + itemQuantity);
         setSelectedItem(null);
       }
     } catch (err) {
-      alert(err.response?.data?.message || "Failed to add item to cart.");
+      showToast(err.response?.data?.message || "Failed to add item to cart.", "error");
     }
   };
 

@@ -9,8 +9,11 @@ import { useSocket } from "../hooks/useSocket";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
+import { useToast } from "../context/ToastContext";
+
 function OrderHistory() {
   const { userData } = useSelector((state) => state.user);
+  const { showToast } = useToast();
   
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -157,7 +160,7 @@ function OrderHistory() {
       setSelectedOrder(res.data?.data?.order);
       setLiveDriverCoords(null);
     } catch {
-      alert("Failed to load order details.");
+      showToast("Failed to load order details.", "error");
     }
   };
 
@@ -174,11 +177,11 @@ function OrderHistory() {
       setSelectedOrder({ ...selectedOrder, rating, review: reviewText });
       setShowRatingModal(false);
       setReviewText("");
-      alert("Thank you for your rating!");
+      showToast("Thank you for your rating!", "success");
       await fetchOrderHistory();
     } catch (err) {
       console.error("Rating submission error details:", err);
-      alert(err.response?.data?.message || "Failed to submit rating.");
+      showToast(err.response?.data?.message || "Failed to submit rating.", "error");
     } finally {
       setSubmittingRating(false);
     }
@@ -275,12 +278,12 @@ function OrderHistory() {
         { withCredentials: true }
       );
       if (res.data?.success) {
-        alert(`Order status updated to ${newStatus} successfully!`);
+        showToast(`Order status updated to ${newStatus} successfully!`, "success");
         setSelectedOrder(res.data?.data?.order);
         fetchOrderHistory();
       }
     } catch (err) {
-      alert(err.response?.data?.message || "Failed to update order status.");
+      showToast(err.response?.data?.message || "Failed to update order status.", "error");
     }
   };
 
@@ -293,12 +296,12 @@ function OrderHistory() {
         { withCredentials: true }
       );
       if (res.data?.success) {
-        alert("Order cancelled successfully!");
+        showToast("Order cancelled successfully!", "success");
         setSelectedOrder(res.data?.data?.order);
         fetchOrderHistory();
       }
     } catch (err) {
-      alert(err.response?.data?.message || "Failed to cancel order.");
+      showToast(err.response?.data?.message || "Failed to cancel order.", "error");
     }
   };
 

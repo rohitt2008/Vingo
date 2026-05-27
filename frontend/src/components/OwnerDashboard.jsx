@@ -7,9 +7,11 @@ import {
   FiMapPin, FiClock, FiCheck, FiSettings, FiBriefcase, FiGrid, FiTrendingUp 
 } from "react-icons/fi";
 import { BiDish } from "react-icons/bi";
+import { useToast } from "../context/ToastContext";
 
 function OwnerDashboard() {
   const { userData } = useSelector((state) => state.user);
+  const { showToast } = useToast();
 
   const getImageUrl = (url) => {
     if (!url) return "";
@@ -109,11 +111,11 @@ function OwnerDashboard() {
         { withCredentials: true }
       );
       if (res.data?.success) {
-        alert(`Order status updated to ${newStatus} successfully!`);
+        showToast(`Order status updated to ${newStatus} successfully!`, "success");
         fetchRestaurantOrders();
       }
     } catch (err) {
-      alert(err.response?.data?.message || "Failed to update order status.");
+      showToast(err.response?.data?.message || "Failed to update order status.", "error");
     }
   };
 
@@ -251,9 +253,9 @@ function OwnerDashboard() {
 
       setShowRegForm(false);
       await fetchOwnerRestaurantData();
-      alert("Restaurant registered successfully!");
+      showToast("Restaurant registered successfully!", "success");
     } catch (err) {
-      alert(err.response?.data?.message || "Failed to register restaurant.");
+      showToast(err.response?.data?.message || "Failed to register restaurant.", "error");
     } finally {
       setSubmittingReg(false);
     }
@@ -286,8 +288,9 @@ function OwnerDashboard() {
       setShowCatModal(false);
       setCatName("");
       setEditingCatId(null);
+      showToast("Category saved successfully!", "success");
     } catch (err) {
-      alert("Failed to save category.");
+      showToast("Failed to save category.", "error");
     } finally {
       setSubmittingCat(false);
     }
@@ -301,8 +304,9 @@ function OwnerDashboard() {
         { withCredentials: true }
       );
       setMenu(res.data?.data?.menu);
+      showToast("Category deleted successfully!", "success");
     } catch (err) {
-      alert("Failed to delete category.");
+      showToast("Failed to delete category.", "error");
     }
   };
 
@@ -374,8 +378,9 @@ function OwnerDashboard() {
 
       setMenu(res.data?.data?.menu);
       setShowItemModal(false);
+      showToast("Menu item saved successfully!", "success");
     } catch (err) {
-      alert("Failed to save menu item.");
+      showToast("Failed to save menu item.", "error");
     } finally {
       setSubmittingItem(false);
     }
@@ -389,8 +394,9 @@ function OwnerDashboard() {
         { withCredentials: true }
       );
       setMenu(res.data?.data?.menu);
+      showToast("Menu item deleted successfully!", "success");
     } catch (err) {
-      alert("Failed to delete item.");
+      showToast("Failed to delete item.", "error");
     }
   };
 
@@ -402,8 +408,9 @@ function OwnerDashboard() {
         { withCredentials: true }
       );
       setMenu(res.data?.data?.menu);
+      showToast("Item availability toggled successfully!", "success");
     } catch (err) {
-      alert("Failed to toggle availability.");
+      showToast("Failed to toggle availability.", "error");
     }
   };
 
@@ -657,8 +664,9 @@ function OwnerDashboard() {
                 try {
                   const res = await axios.patch(`${serverUrl}/api/restaurants/${restaurant._id}/toggle`, {}, { withCredentials: true });
                   setRestaurant(res.data?.data?.restaurant);
+                  showToast(`Restaurant is now ${res.data?.data?.restaurant?.isOpen ? "OPEN" : "CLOSED"}!`, "success");
                 } catch {
-                  alert("Failed to toggle status.");
+                  showToast("Failed to toggle status.", "error");
                 }
               }}
               className={`px-4 py-2 rounded-xl text-xs font-bold shadow-md cursor-pointer transition-all ${

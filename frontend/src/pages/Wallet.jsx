@@ -3,11 +3,13 @@ import axios from "axios";
 import { serverUrl } from "../App";
 import Nav from "../components/Nav";
 import { FiDollarSign, FiAward, FiShare2, FiPlus, FiGrid, FiArrowUpRight, FiArrowDownLeft, FiRefreshCw } from "react-icons/fi";
+import { useToast } from "../context/ToastContext";
 
 function Wallet() {
   const [wallet, setWallet] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const { showToast } = useToast();
 
   // Top Up Modal State
   const [showTopUp, setShowTopUp] = useState(false);
@@ -48,7 +50,7 @@ function Wallet() {
       // 2. Launch Razorpay Top-up flow
       launchRazorpayTopUp(orderData);
     } catch (err) {
-      alert("Failed to initialize wallet top-up.");
+      showToast("Failed to initialize wallet top-up.", "error");
     } finally {
       setSubmittingTopUp(false);
     }
@@ -74,12 +76,12 @@ function Wallet() {
             },
             { withCredentials: true }
           );
-          alert("Wallet credited successfully!");
+          showToast("Wallet credited successfully!", "success");
           setShowTopUp(false);
           setTopUpAmount("");
           fetchWalletDetails();
         } catch {
-          alert("Top up confirmation failed.");
+          showToast("Top up confirmation failed.", "error");
         }
       },
       theme: { color: "#ff4d2d" },
@@ -178,7 +180,7 @@ function Wallet() {
             <button
               onClick={() => {
                 navigator.clipboard.writeText(wallet?.referralCode || "GETINGO");
-                alert("Referral code copied to clipboard!");
+                showToast("Referral code copied to clipboard!", "success");
               }}
               className="w-12 h-12 rounded-2xl bg-[#fff2ee] text-[#ff4d2d] flex items-center justify-center hover:bg-[#ffe4dc] transition-colors cursor-pointer"
               title="Copy Referral Code"

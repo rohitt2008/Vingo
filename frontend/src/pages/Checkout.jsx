@@ -7,9 +7,12 @@ import Nav from "../components/Nav";
 import { FiShoppingBag, FiMapPin, FiGift, FiCreditCard, FiTrash, FiDollarSign } from "react-icons/fi";
 import { BiDish } from "react-icons/bi";
 
+import { useToast } from "../context/ToastContext";
+
 function Checkout() {
   const navigate = useNavigate();
   const { userData } = useSelector((state) => state.user);
+  const { showToast } = useToast();
 
   // Cart & Pricing states
   const [cart, setCart] = useState({ items: [] });
@@ -108,7 +111,7 @@ function Checkout() {
       setAddrState("");
       setAddrPincode("");
     } catch (err) {
-      alert("Failed to add address.");
+      showToast("Failed to add address.", "error");
     }
   };
 
@@ -127,8 +130,8 @@ function Checkout() {
       if (!updatedCart.restaurantId) {
         setRestaurant(null);
       }
-    } catch {
-      alert("Failed to remove item.");
+    } catch (cmdError) {
+      showToast("Failed to remove item.", "error");
     }
   };
 
@@ -146,7 +149,7 @@ function Checkout() {
         { withCredentials: true }
       );
       setAppliedCoupon(res.data?.data);
-      alert("Coupon applied successfully!");
+      showToast("Coupon applied successfully!", "success");
     } catch (err) {
       setCouponErr(err.response?.data?.message || "Invalid Coupon Code");
       setAppliedCoupon(null);
@@ -181,10 +184,12 @@ function Checkout() {
 
   const handlePlaceOrder = async () => {
     if (!selectedAddress) {
-      return alert("Please select a delivery address.");
+      showToast("Please select a delivery address.", "warning");
+      return;
     }
     if (paymentMethod === "wallet" && walletBalance < grandTotal) {
-      return alert("Insufficient wallet balance. Please top up or choose another payment method.");
+      showToast("Insufficient wallet balance. Please top up or choose another payment method.", "warning");
+      return;
     }
 
     setPlacing(true);
@@ -213,11 +218,11 @@ function Checkout() {
         // Launch Online Payment Flow
         launchRazorpayCheckout(orderData);
       } else {
-        alert("Order placed successfully!");
+        showToast("Order placed successfully!", "success");
         navigate("/orders");
       }
     } catch (err) {
-      alert(err.response?.data?.message || "Failed to place order.");
+      showToast(err.response?.data?.message || "Failed to place order.", "error");
     } finally {
       setPlacing(false);
     }
@@ -246,10 +251,10 @@ function Checkout() {
             },
             { withCredentials: true }
           );
-          alert("Online payment verified successfully!");
+          showToast("Online payment verified successfully!", "success");
           navigate("/orders");
         } catch {
-          alert("Payment verification failed.");
+          showToast("Payment verification failed.", "error");
         }
       },
       prefill: {

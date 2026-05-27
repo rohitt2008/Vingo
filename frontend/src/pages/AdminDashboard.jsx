@@ -3,9 +3,11 @@ import axios from "axios";
 import { serverUrl } from "../App";
 import Nav from "../components/Nav";
 import { FiTrendingUp, FiUsers, FiShoppingBag, FiPercent, FiShield, FiCheck, FiX, FiTrash, FiGrid, FiPlus } from "react-icons/fi";
+import { useToast } from "../context/ToastContext";
 
 function AdminDashboard() {
   const [activeTab, setActiveTab] = useState("overview"); // 'overview', 'users', 'restaurants', 'coupons'
+  const { showToast } = useToast();
   const [metrics, setMetrics] = useState(null);
   const [users, setUsers] = useState([]);
   const [restaurants, setRestaurants] = useState([]);
@@ -67,7 +69,7 @@ function AdminDashboard() {
         },
         { withCredentials: true }
       );
-      alert("New coupon campaign added!");
+      showToast("New coupon campaign added!", "success");
       setShowAddCoupon(false);
       
       // Reset form
@@ -79,7 +81,7 @@ function AdminDashboard() {
 
       fetchAdminData();
     } catch (err) {
-      alert(err.response?.data?.message || "Failed to create coupon.");
+      showToast(err.response?.data?.message || "Failed to create coupon.", "error");
     }
   };
 
@@ -87,10 +89,10 @@ function AdminDashboard() {
     if (!window.confirm("Are you sure you want to delete this coupon?")) return;
     try {
       await axios.delete(`${serverUrl}/api/coupons/${id}`, { withCredentials: true });
-      alert("Coupon campaign deleted.");
+      showToast("Coupon campaign deleted.", "success");
       fetchAdminData();
     } catch {
-      alert("Failed to delete coupon.");
+      showToast("Failed to delete coupon.", "error");
     }
   };
 
@@ -106,10 +108,10 @@ function AdminDashboard() {
         { role: nextRole },
         { withCredentials: true }
       );
-      alert(`User role updated to: ${nextRole}`);
+      showToast(`User role updated to: ${nextRole}`, "success");
       fetchAdminData();
     } catch {
-      alert("Failed to toggle user role.");
+      showToast("Failed to toggle user role.", "error");
     }
   };
 
@@ -117,10 +119,10 @@ function AdminDashboard() {
     if (!window.confirm("Delete this user permanently?")) return;
     try {
       await axios.delete(`${serverUrl}/api/admin/users/${userId}`, { withCredentials: true });
-      alert("User removed.");
+      showToast("User removed.", "success");
       fetchAdminData();
     } catch {
-      alert("Failed to delete user.");
+      showToast("Failed to delete user.", "error");
     }
   };
 
@@ -133,10 +135,10 @@ function AdminDashboard() {
         { approved: !currentStatus },
         { withCredentials: true }
       );
-      alert(`Restaurant ${currentStatus ? "Suspended" : "Approved"}!`);
+      showToast(`Restaurant ${currentStatus ? "Suspended" : "Approved"}!`, "success");
       fetchAdminData();
     } catch {
-      alert("Failed to change restaurant approval state.");
+      showToast("Failed to change restaurant approval state.", "error");
     }
   };
 

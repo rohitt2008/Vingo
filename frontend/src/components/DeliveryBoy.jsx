@@ -20,9 +20,11 @@ import {
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { io } from "socket.io-client";
+import { useToast } from "../context/ToastContext";
 
 function DeliveryBoy() {
   const { userData, city } = useSelector((state) => state.user);
+  const { showToast } = useToast();
   const firstName = userData?.name?.split(" ")[0] || "Rider";
 
   const [isOnline, setIsOnline] = useState(userData?.deliveryDetails?.isAvailable || false);
@@ -66,7 +68,7 @@ function DeliveryBoy() {
 
     // Listen for real-time delivery offer broadcasts
     socket.on("delivery_offer", (offer) => {
-      alert(`🎯 NEW JOB OFFER! ${offer.restaurantName} is located ${offer.distance}km away. Accepting offers automatically!`);
+      showToast(`🎯 NEW JOB OFFER! ${offer.restaurantName} is located ${offer.distance}km away.`, "info");
       fetchOrders();
     });
 
@@ -220,9 +222,9 @@ function DeliveryBoy() {
         { withCredentials: true }
       );
       setIsOnline(nextStatus);
-      alert(`Rider is now ${nextStatus ? "ONLINE & ready for jobs!" : "OFFLINE"}`);
+      showToast(`Rider is now ${nextStatus ? "ONLINE & ready for jobs!" : "OFFLINE"}`, "success");
     } catch (err) {
-      alert("Failed to toggle online status.");
+      showToast("Failed to toggle online status.", "error");
     }
   };
 
@@ -230,10 +232,10 @@ function DeliveryBoy() {
     setUpdatingId(orderId);
     try {
       await axios.patch(`${serverUrl}/api/orders/${orderId}/accept`, {}, { withCredentials: true });
-      alert("Order accepted successfully! Food is ready, proceed to pickup.");
+      showToast("Order accepted successfully! Proceed to pickup.", "success");
       fetchOrders();
     } catch (err) {
-      alert(err.response?.data?.message || "Failed to accept order.");
+      showToast(err.response?.data?.message || "Failed to accept order.", "error");
     } finally {
       setUpdatingId(null);
     }
@@ -244,13 +246,13 @@ function DeliveryBoy() {
     try {
       const res = await axios.patch(`${serverUrl}/api/orders/${orderId}/pickup`, {}, { withCredentials: true });
       if (res.data?.success) {
-        alert("Food picked up! Route GPS telemetry is now broadcasting.");
+        showToast("Food picked up! Route GPS telemetry is now broadcasting.", "success");
         setSimStep(0);
         setDistanceLeft(2500);
         fetchOrders();
       }
     } catch (err) {
-      alert("Failed to pick up order.");
+      showToast("Failed to pick up order.", "error");
     } finally {
       setUpdatingId(null);
     }
@@ -309,7 +311,7 @@ function DeliveryBoy() {
         { withCredentials: true }
       );
       if (res.data?.success) {
-        alert("🎉 OTP Verified! Order successfully completed and delivered hot.");
+        showToast("🎉 OTP Verified! Order successfully completed and delivered hot.", "success");
         setShowOtpModal(false);
         setOtpCode("");
         setSimStep(0);
