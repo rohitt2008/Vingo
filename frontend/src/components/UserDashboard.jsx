@@ -1,12 +1,14 @@
 import React from "react";
 import { useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom";
 import { FiClock, FiHeart, FiMapPin, FiShoppingBag } from "react-icons/fi";
 import { IoFastFoodOutline } from "react-icons/io5";
 
 function UserDashboard() {
+  const navigate = useNavigate();
   const { userData, city } = useSelector((state) => state.user);
 
-  const firstName = userData?.fullName?.split(" ")[0] || "User";
+  const firstName = (userData?.name || userData?.fullName)?.split(" ")[0] || "User";
 
   const stats = [
     {
@@ -65,7 +67,10 @@ function UserDashboard() {
             <h2 className="text-lg font-semibold text-[#222]">Quick Actions</h2>
           </div>
           <div className="mt-4 flex flex-wrap gap-3">
-            <button className="px-4 py-2 rounded-lg bg-[#ff4d2d] text-white font-medium hover:bg-[#e64323] transition-colors cursor-pointer">
+            <button 
+              onClick={() => navigate("/restaurants")}
+              className="px-4 py-2 rounded-lg bg-[#ff4d2d] text-white font-medium hover:bg-[#e64323] transition-colors cursor-pointer"
+            >
               Browse Restaurants
             </button>
             <button className="px-4 py-2 rounded-lg border border-[#ff4d2d] text-[#ff4d2d] font-medium hover:bg-[#fff2ee] transition-colors cursor-pointer">

@@ -29,12 +29,19 @@ function SignIn() {
       const result = await axios.post(`${serverUrl}/api/auth/signin` , {
         email,password
       }, {withCredentials:true})
-      dispatch(setUserData(result.data))
+      const user = result.data?.data?.user || result.data;
+      dispatch(setUserData(user))
       setErr("");
       setLoading(false);
       
     } catch (error) {
-      setErr(error?.response?.data?.message);
+      const backendData = error?.response?.data;
+      if (backendData?.errors && backendData.errors.length > 0) {
+        const details = backendData.errors.map(e => `${e.field}: ${e.message}`).join(', ');
+        setErr(`${backendData.message} (${details})`);
+      } else {
+        setErr(backendData?.message || "Failed to sign in.");
+      }
       setLoading(false);
     }
   }
@@ -46,7 +53,8 @@ function SignIn() {
       const {data} = await axios.post(`${serverUrl}/api/auth/google-auth` , {
         email: result.user.email,
       }, {withCredentials: true})
-      dispatch(setUserData(data))
+      const user = data?.data?.user || data;
+      dispatch(setUserData(user))
       
     } catch (error) {
       console.log(error)

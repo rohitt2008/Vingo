@@ -1,0 +1,61 @@
+version: '3.8'
+
+services:
+  # MongoDB Database Service
+  mongodb:
+    image: mongo:6.0
+    container_name: vingo_mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - vingo_network
+
+  # Redis Caching Service
+  redis:
+    image: redis:7.0-alpine
+    container_name: vingo_redis
+    ports:
+      - "6379:6379"
+    networks:
+      - vingo_network
+
+  # Express Backend API Service
+  backend:
+    build:
+      context: ./backend
+    container_name: vingo_backend
+    ports:
+      - "3004:3004"
+    environment:
+      - PORT=3004
+      - NODE_ENV=production
+      - MONGODB_URL=mongodb://mongodb:27017/vingo
+      - REDIS_URL=redis://redis:6379
+      - JWT_SECRET=super_secure_production_secret_key_vingo
+      - CLIENT_URL=http://localhost:5173
+    depends_on:
+      - mongodb
+      - redis
+    networks:
+      - vingo_network
+
+  # React Frontend Client Service
+  frontend:
+    build:
+      context: ./frontend
+    container_name: vingo_frontend
+    ports:
+      - "5173:80"
+    depends_on:
+      - backend
+    networks:
+      - vingo_network
+
+volumes:
+  mongo_data:
+
+networks:
+  vingo_network:
+    driver: bridge

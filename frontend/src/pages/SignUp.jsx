@@ -30,14 +30,22 @@ function SignUp() {
     setLoading(true);
     try {
       const result = await axios.post(`${serverUrl}/api/auth/signup` , {
-        fullName,email,password,mobile,role
+        name: fullName, email, password, phone: mobile, role
       }, {withCredentials:true})
-      dispatch(setUserData(result.data))
+      const user = result.data?.data?.user || result.data;
+      dispatch(setUserData(user))
       setErr("");
       setLoading(false)
-      navigate("/signin");
+      navigate("/");
     } catch (error) {
-      setErr(error?.response?.data?.message);
+      const backendData = error?.response?.data;
+      if (backendData?.errors && backendData.errors.length > 0) {
+        // Construct detailed field error messages
+        const details = backendData.errors.map(e => `${e.field}: ${e.message}`).join(', ');
+        setErr(`${backendData.message} (${details})`);
+      } else {
+        setErr(backendData?.message || "Failed to create account.");
+      }
       setLoading(false);
     }
   }
@@ -49,12 +57,13 @@ function SignUp() {
     const result = await signInWithPopup(auth , provider);
     try {
       const {data} = await axios.post(`${serverUrl}/api/auth/google-auth` , {
-        fullName: result.user.displayName,
+        name: result.user.displayName,
         email: result.user.email,
         role,
-        mobile
+        phone: mobile
       }, {withCredentials: true})
-      dispatch(setUserData(data))
+      const user = data?.data?.user || data;
+      dispatch(setUserData(user))
     } catch (error) {
       console.log(error)
     }
@@ -114,7 +123,7 @@ function SignUp() {
         <div className="mb-4">
           <label htmlFor="role" className="block text-gray 700 font-medium mb-1">Role</label>
           <div className="flex gap-2">
-            {["user" , "owner" , "deliveryBoy"].map((r)=>(
+            {["user" , "owner" , "delivery"].map((r)=>(
               <button key={r} className="flex-1 border rounded-lg px-3 py-2 text-center transition-colors font-medium cursor-pointer" 
               onClick={()=> setRole(r)}
               style={
