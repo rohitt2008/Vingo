@@ -271,7 +271,7 @@ export const getOrderDetails = async (orderId, userId, role) => {
 
 // ── Update Order Status ───────────────────────────────────────────────
 
-export const updateOrderStatus = async (orderId, userId, role, newStatus) => {
+export const updateOrderStatus = async (orderId, userId, role, newStatus, rating, review) => {
   const order = await Order.findById(orderId).populate('restaurantId');
   if (!order) {
     throw new AppError('Order not found', 404);
@@ -290,14 +290,53 @@ export const updateOrderStatus = async (orderId, userId, role, newStatus) => {
     if (order.customerId.toString() !== userId.toString()) {
       throw new AppError('Access denied', 403);
     }
-    if (newStatus !== 'cancelled') {
-      throw new AppError('Customers are only allowed to cancel their orders', 400);
+    // Customer can cancel OR rate a delivered order
+    if (newStatus !== 'cancelled' && order.status !== 'delivered') {
+      throw new AppError('Customers are only allowed to cancel active orders or review delivered orders', 400);
     }
-    if (!['pending', 'confirmed'].includes(order.status)) {
+    if (newStatus === 'cancelled' && !['pending', 'confirmed'].includes(order.status)) {
       throw new AppError('Cannot cancel order after it has been accepted or prepared', 400);
     }
   } else if (role !== 'admin') {
     throw new AppError('Access denied', 403);
+  }
+
+  // Save rating and review if provided
+  if (rating !== undefined) {
+    order.rating = Number(rating);
+    
+    try {
+      // Safely retrieve restaurant ID whether populated or not
+      const restaurantId = order.restaurantId?._id || order.restaurantId;
+      if (restaurantId) {
+        const restaurant = await Restaurant.findById(restaurantId);
+        if (restaurant) {
+          const allRatedOrders = await Order.find({
+            restaurantId: restaurantId,
+            rating: { $exists: true, $ne: null }
+          });
+          
+          let sum = Number(rating);
+          let count = 1;
+          for (const ord of allRatedOrders) {
+            if (ord._id.toString() !== order._id.toString() && ord.rating) {
+              sum += Number(ord.rating);
+              count += 1;
+            }
+          }
+          
+          restaurant.avgRating = Number((sum / count).toFixed(1));
+          restaurant.totalReviews = count;
+          await restaurant.save();
+          logger.info(`Updated restaurant ${restaurantId} average rating to ${restaurant.avgRating}`);
+        }
+      }
+    } catch (err) {
+      logger.warn(`Failed to update denormalized restaurant average rating: ${err.message}`);
+    }
+  }
+  if (review !== undefined) {
+    order.review = review;
   }
 
   // Handle refund for cancelled orders if paid using wallet

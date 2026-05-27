@@ -22,11 +22,11 @@ export const getOrderDetails = asyncWrapper(async (req, res) => {
 });
 
 export const updateOrderStatus = asyncWrapper(async (req, res) => {
-  const { status } = req.body;
+  const { status, rating, review } = req.body;
   if (!status) {
     return res.status(400).json({ success: false, message: 'status is required' });
   }
-  const order = await orderService.updateOrderStatus(req.params.id, req.userId, req.userRole, status);
+  const order = await orderService.updateOrderStatus(req.params.id, req.userId, req.userRole, status, rating, review);
   res.status(200).json({ success: true, message: 'Order status updated', data: { order } });
 });
 

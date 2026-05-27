@@ -176,8 +176,9 @@ function OrderHistory() {
       setReviewText("");
       alert("Thank you for your rating!");
       await fetchOrderHistory();
-    } catch {
-      alert("Failed to submit rating.");
+    } catch (err) {
+      console.error("Rating submission error details:", err);
+      alert(err.response?.data?.message || "Failed to submit rating.");
     } finally {
       setSubmittingRating(false);
     }

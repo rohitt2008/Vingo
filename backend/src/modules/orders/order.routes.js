@@ -18,7 +18,7 @@ router.post('/:id/verify-otp', auth, requireRole('delivery', 'admin'), orderCtrl
 
 router.get('/:id', auth, orderCtrl.getOrderDetails);
 
-// Status updates (Owner, Admin, or Delivery boys)
-router.patch('/:id/status', auth, requireRole('owner', 'admin', 'delivery'), orderCtrl.updateOrderStatus);
+// Status updates (Owner, Admin, Delivery boys, or Customers)
+router.patch('/:id/status', auth, requireRole('owner', 'admin', 'delivery', 'user'), orderCtrl.updateOrderStatus);
 
 export default router;
