@@ -65,9 +65,16 @@ export const signOut = asyncWrapper(async (req, res) => {
   }
 
   // Clear all auth cookies
-  res.clearCookie('accessToken');
-  res.clearCookie('token');
-  res.clearCookie('refreshToken', { path: '/api/auth/refresh' });
+  const isProd = process.env.NODE_ENV === 'production';
+  const cookieOptions = {
+    httpOnly: true,
+    secure: isProd,
+    sameSite: isProd ? 'none' : 'lax'
+  };
+  
+  res.clearCookie('accessToken', cookieOptions);
+  res.clearCookie('token', cookieOptions);
+  res.clearCookie('refreshToken', { ...cookieOptions, path: '/api/auth/refresh' });
 
   res.status(200).json({
     success: true,
@@ -80,9 +87,16 @@ export const signOut = asyncWrapper(async (req, res) => {
 export const signOutAll = asyncWrapper(async (req, res) => {
   await authService.signOutAll(req.user._id);
 
-  res.clearCookie('accessToken');
-  res.clearCookie('token');
-  res.clearCookie('refreshToken', { path: '/api/auth/refresh' });
+  const isProd = process.env.NODE_ENV === 'production';
+  const cookieOptions = {
+    httpOnly: true,
+    secure: isProd,
+    sameSite: isProd ? 'none' : 'lax'
+  };
+
+  res.clearCookie('accessToken', cookieOptions);
+  res.clearCookie('token', cookieOptions);
+  res.clearCookie('refreshToken', { ...cookieOptions, path: '/api/auth/refresh' });
 
   res.status(200).json({
     success: true,
