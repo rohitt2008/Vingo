@@ -19,10 +19,11 @@ function Nav() {
   const handleLogOut = async () => {
     try {
       await axios.get(`${serverUrl}/api/auth/signout`, { withCredentials: true });
-      dispatch(setUserData(null));
-      navigate("/signin");
     } catch (error) {
       // Ignored
+    } finally {
+      dispatch(setUserData(null));
+      navigate("/signin");
     }
   };
 

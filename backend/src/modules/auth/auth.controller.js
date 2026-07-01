@@ -1,5 +1,6 @@
 import * as authService from './auth.service.js';
 import asyncWrapper from '../../utils/asyncWrapper.js';
+import env from '../../config/env.js';
 
 // ── Sign Up ───────────────────────────────────────────────────────────
 
@@ -65,7 +66,7 @@ export const signOut = asyncWrapper(async (req, res) => {
   }
 
   // Clear all auth cookies
-  const isProd = process.env.NODE_ENV === 'production';
+  const isProd = env.NODE_ENV === 'production';
   const cookieOptions = {
     httpOnly: true,
     secure: isProd,
@@ -87,7 +88,7 @@ export const signOut = asyncWrapper(async (req, res) => {
 export const signOutAll = asyncWrapper(async (req, res) => {
   await authService.signOutAll(req.user._id);
 
-  const isProd = process.env.NODE_ENV === 'production';
+  const isProd = env.NODE_ENV === 'production';
   const cookieOptions = {
     httpOnly: true,
     secure: isProd,
